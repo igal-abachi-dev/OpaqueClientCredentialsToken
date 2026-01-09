@@ -63,14 +63,14 @@ namespace OpaqueClientCredentialsTokenTester.Token
             return new(true, 200, null, null, id, secret, grantType, scope);
         }
 
-        private static (string? id, string? secret) TryParseBasic(string? authHeader)
+        private static (string? id, string? secret) TryParseBasic(string? authHeader) //the industry standard is to rely on HTTPS (TLS)
         {
             if (string.IsNullOrWhiteSpace(authHeader)) return (null, null);
             if (!authHeader.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase)) return (null, null);
 
             var b64 = authHeader["Basic ".Length..].Trim();
             byte[] bytes;
-            try { bytes = Convert.FromBase64String(b64); }
+            try { bytes = Convert.FromBase64String(b64); } //client_id:client_secret encoded in Base64.
             catch { return (null, null); }
 
             var s = Encoding.UTF8.GetString(bytes);
@@ -78,9 +78,40 @@ namespace OpaqueClientCredentialsTokenTester.Token
             if (idx <= 0) return (null, null);
 
             var id = s[..idx];
-            var secret = s[(idx + 1)..];
+            var secret = s[(idx + 1)..];//API Key of client
             return (id, secret);
         }
     }
-
+    /*
+     using System.Net.Http.Headers;
+       using System.Text;
+       
+       static async Task<(string AccessToken, int ExpiresIn)> GetTokenAsync(
+           HttpClient http,
+           Uri tokenEndpoint,
+           string clientId,
+           string clientSecret,
+           string scope)
+       {
+           var basic = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}"));
+       
+           using var req = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
+           req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basic);
+           req.Content = new FormUrlEncodedContent(new[]
+           {
+               new KeyValuePair<string,string>("grant_type", "client_credentials"),
+               new KeyValuePair<string,string>("scope", scope),
+           });
+       
+           using var res = await http.SendAsync(req);
+           res.EnsureSuccessStatusCode();
+       
+           var json = await res.Content.ReadAsStringAsync();
+           // deserialize { access_token, token_type, expires_in }
+           // (use System.Text.Json)
+           throw new NotImplementedException();
+       }
+       
+     
+     */
 }

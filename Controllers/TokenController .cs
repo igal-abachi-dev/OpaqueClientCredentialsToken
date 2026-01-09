@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Runtime;
 using OpaqueClientCredentialsTokenTester.Settings;
 using OpaqueClientCredentialsTokenTester.Token;
+using System.Runtime;
+using System.Text.Encodings.Web;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace OpaqueClientCredentialsTokenTester.Controllers
 {
@@ -29,8 +31,42 @@ namespace OpaqueClientCredentialsTokenTester.Controllers
         [HttpPost]
         public async Task<IActionResult> GenerateToken()
         {
+            //SRPv6 / Pake: adds a lot of complexity, and gives you little if you already require TLS + high-entropy secrets. , no need
+            //If your goal is “don’t rely on a shared secret,” the industry answer is asymmetric client auth (below), not SRP.
+            //Require TLS and keep tokens short-lived (15m is right).
+            //Support client_secret_basic(Basic header) +application / x - www - form - urlencoded.
+            //
+            
             // 'HttpContext' is available as a property in ControllerBase
             var parsed = await TokenRequestParser.ParseAsync(HttpContext);
+
+            /*
+             Use application/x-www-form-urlencoded (OAuth2 standard)
+
+OAuth 2.0 defines token endpoint requests as form-encoded parameters (not JSON) and shows grant_type=client_credentials exactly in this format.
+
+ Prefer putting client_id:client_secret in the Authorization header (Basic)
+
+OAuth2 allows the client to authenticate to the token endpoint using HTTP Basic (and it’s the most widely supported/expected for confidential clients).
+
+Request (recommended): client_secret_basic
+POST /token HTTP/1.1
+Host: api.yourserver.com
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=orders.read%20orders.write
+
+
+Why this is best in practice
+
+Many gateways/loggers are more likely to scrub Authorization than request bodies.
+
+Keeps “credentials” (auth) separate from “parameters” (grant_type/scope).
+
+You should still assume either headers or bodies can be logged somewhere and configure redaction appropriately—TLS protects in transit, not in logs.
+             
+             */
 
             if (!parsed.Ok)
             {
