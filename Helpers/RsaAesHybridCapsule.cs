@@ -2,11 +2,13 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace OpaqueClientCredentialsTokenTester.Helpers
 {
+    //You should always use the Hybrid approach (RSA + AES), regardless of whether the data is 10 bytes or 10 MB. not just rsa alone if small bytes
     public static class RsaAesHybridCapsule
     {
         // -----------------------------------------------------------------
@@ -169,7 +171,7 @@ namespace OpaqueClientCredentialsTokenTester.Helpers
         }
 
         // -----------------------------------------------------------------
-        // Helpers
+        // Helpers , like  Base64Url.EncodeToString(blob);  Base64Url.DecodeFromChars(package); , Base64UrlTextEncoder.encode/decode
         // -----------------------------------------------------------------
         private static string Base64UrlEncode(byte[] input)
         {
