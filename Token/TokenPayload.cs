@@ -47,6 +47,23 @@ namespace OpaqueClientCredentialsTokenTester.Token
        Step 4 (Channel B): Send the password WhatsApp (e2e signal protocol)
        step 5:Hygiene, after client received and downloaded/opened it , both sides delete the email and whatsapp message (also from deleted messages) , emails jave Journaling backups that deleted after years
 
+
+    //////////
+    //https://1password.com/password-generator  is nice: local is better
+    gen password powershell:
+       $chars = 33..126 | ForEach-Object { [char]$_ }
+       $bytes = New-Object byte[] 24
+
+       $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+       $rng.GetBytes($bytes)
+       $rng.GetBytes($bytes)
+       $rng.GetBytes($bytes)
+       $rng.GetBytes($bytes)
+       $rng.GetBytes($bytes)
+       $rng.Dispose()
+    
+       $password = -join ($bytes | ForEach-Object { $chars[$_ % $chars.Count] })
+       Write-Host $password -ForegroundColor Green
      
 
 curl -X POST https://your-server/token \
